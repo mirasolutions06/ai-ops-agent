@@ -1,0 +1,24 @@
+{
+  "vault_dir": "~/vault",
+  "models": {
+    "flagship": "gpt-4o",
+    "mid": "gpt-4o-mini",
+    "cheap": "gpt-4o-mini",
+    "vision": "gpt-4o",
+    "image": "gpt-image-1",
+    "embed": "text-embedding-3-small"
+  },
+  "schedule": {
+    "morning_brief": "0 7 * * *",
+    "evening_digest": "30 21 * * *",
+    "weekly_review": "0 18 * * 0",
+    "vault_index": "*/15 * * * *",
+    "task_sweep": "*/10 * * * *",
+    "voicenote_sweep": "0 * * * *"
+  },
+  "dashboard": {
+    "gateway_unit": "agent-gateway",
+    "gateway_port": 18789,
+    "port": 7474
+  }
+}

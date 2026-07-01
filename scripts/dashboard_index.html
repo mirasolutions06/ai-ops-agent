@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Mission Control</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080808;
+  --s1:#0f0f0f;
+  --s2:#161616;
+  --s3:#1e1e1e;
+  --b1:#1f1f1f;
+  --b2:#2a2a2a;
+  --b3:#333;
+  --txt:#e8e8e8;
+  --muted:#666;
+  --dim:#333;
+  --white:#fff;
+  --green:#22c55e;
+  --red:#ef4444;
+  --yellow:#eab308;
+  --blue:#3b82f6;
+  --r:10px;
+  --rs:6px;
+}
+
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'Inter',-apple-system,sans-serif;font-size:13px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+/* ── SHELL ── */
+.shell{display:grid;grid-template-rows:52px 1fr auto;min-height:100vh}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;border-bottom:1px solid var(--b1);
+  background:rgba(8,8,8,0.95);backdrop-filter:blur(8px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;letter-spacing:.05em;color:var(--white);text-transform:uppercase}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2.5s infinite}
+.logo-dot.off{background:var(--red);box-shadow:0 0 6px var(--red);animation:none}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.hdr-right{display:flex;align-items:center;gap:16px}
+.sync-ts{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.status-chip{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);background:var(--s1);border:1px solid var(--b1);padding:4px 11px;border-radius:20px}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:var(--green)}
+
+/* ── MAIN ── */
+main{padding:20px 24px;display:flex;flex-direction:column;gap:16px;max-width:1440px;margin:0 auto;width:100%}
+
+/* ── LABELS ── */
+.lbl{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+
+/* ── CARD BASE ── */
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.card-sm{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px}
+
+/* ══════════════════════════════════════
+   ROW 1 - Agents + System (5 cols)
+══════════════════════════════════════ */
+.row1{display:grid;grid-template-columns:repeat(5, 1fr);gap:12px}
+
+/* Agent card */
+.agent-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px;position:relative}
+.agent-card.primary{border-color:var(--b2)}
+.agent-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+.agent-name{font-size:16px;font-weight:700;color:var(--white);letter-spacing:-.02em}
+.agent-role{font-size:11px;color:var(--muted);margin-top:2px}
+.pill{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;letter-spacing:.03em}
+.pill.on{color:var(--green);background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)}
+.pill.off{color:var(--red);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)}
+.pill-dot{width:4px;height:4px;border-radius:50%;background:currentColor}
+
+.agent-meta{display:flex;flex-direction:column;gap:5px;margin-top:4px}
+.meta-row{display:flex;align-items:center;justify-content:space-between}
+.meta-k{font-size:11px;color:var(--muted)}
+.meta-v{font-size:11px;color:var(--txt);font-family:'JetBrains Mono',monospace}
+.ch-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:4px;background:var(--s2);border:1px solid var(--b2);color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+
+/* System metric card */
+.met-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:8px}
+.met-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.met-val{font-size:24px;font-weight:700;color:var(--white);letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.met-val.warn{color:var(--yellow)}
+.met-val.crit{color:var(--red)}
+.met-gw-val{font-size:20px}
+.met-gw-restarts.warn{color:var(--yellow)}
+.met-gw-restarts.crit{color:var(--red);font-weight:600}
+.met-ram-val{font-size:22px}
+.met-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.pbar{height:2px;background:var(--b2);border-radius:99px;overflow:hidden;margin-top:2px;position:relative}
+.pfill{height:100%;border-radius:99px;background:var(--white);transition:width .8s ease}
+.pfill.warn{background:var(--yellow)}
+.pfill.crit{background:var(--red)}
+.pbar-tick{position:absolute;top:-2px;height:6px;width:1px;background:var(--muted);opacity:.55}
+
+/* ══════════════════════════════════════
+   UPTIME STRIP
+══════════════════════════════════════ */
+.strip{display:flex;align-items:center;gap:0;background:var(--s1);border:1px solid var(--b1);border-radius:var(--rs);overflow:hidden}
+.strip-item{display:flex;align-items:center;gap:8px;padding:9px 18px;font-size:11px;color:var(--muted);border-right:1px solid var(--b1);flex:1;white-space:nowrap}
+.strip-item:last-child{border-right:none}
+.strip-k{font-weight:500}
+.strip-v{color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;margin-left:auto}
+
+/* ══════════════════════════════════════
+   ROW 2 - Cost + Chart (5 cols)
+══════════════════════════════════════ */
+.row2{display:grid;grid-template-columns:1fr 1fr 1fr 1fr 2.2fr;gap:12px}
+
+.cost-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.cost-lbl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cost-val{font-size:26px;font-weight:700;color:var(--white);letter-spacing:-.03em;line-height:1.1;font-variant-numeric:tabular-nums}
+.cost-sub{font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px}
+
+/* Chart card */
+.chart-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between}
+.chart-title{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.chart-wrap{height:72px;display:flex;align-items:flex-end;gap:3px;padding-top:6px}
+.bar-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.bar-inner{width:100%;border-radius:3px 3px 0 0;background:var(--b3);transition:height .5s ease;min-height:2px;cursor:default;position:relative}
+.bar-inner:hover{background:#555}
+.bar-inner .tooltip{
+  display:none;position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);
+  background:#1a1a1a;border:1px solid var(--b2);border-radius:4px;
+  padding:4px 8px;font-size:10px;white-space:nowrap;color:var(--txt);
+  font-family:'JetBrains Mono',monospace;z-index:10;pointer-events:none;
+}
+.bar-inner:hover .tooltip{display:block}
+.bar-lbl{font-size:9px;color:var(--dim);font-family:'JetBrains Mono',monospace;text-align:center;letter-spacing:0}
+.chart-today-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+
+/* ══════════════════════════════════════
+   ROW 3 - Model breakdown (full width)
+══════════════════════════════════════ */
+.model-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 20px}
+.model-table{display:flex;flex-direction:column;gap:0}
+.model-row{display:grid;grid-template-columns:160px 1fr 80px 80px 80px 80px;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--b1);font-size:11px}
+.model-row:last-child{border-bottom:none}
+.model-row.hdr{padding:4px 0 8px;color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.mod-name{color:var(--txt);font-family:'JetBrains Mono',monospace;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mod-bar{height:3px;background:var(--b2);border-radius:99px;overflow:hidden}
+.mod-bar-fill{height:100%;background:var(--white);border-radius:99px;opacity:.5}
+.mod-num{color:var(--muted);text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px}
+.mod-cost{color:var(--txt);text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500}
+
+/* ══════════════════════════════════════
+   ROW 4 - Logs + Crons
+══════════════════════════════════════ */
+.row4{display:grid;grid-template-columns:1fr 340px;gap:12px}
+
+/* Logs */
+.log-feed{display:flex;flex-direction:column;gap:0;max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.log-entry{display:grid;grid-template-columns:140px 40px 1fr;gap:8px;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--b1)}
+.log-entry:last-child{border-bottom:none}
+.log-ts{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--dim);white-space:nowrap}
+.log-lvl{font-size:9px;font-weight:700;text-align:center;letter-spacing:.04em;padding:1px 0}
+.log-lvl.info{color:var(--dim)}
+.log-lvl.warn{color:var(--yellow)}
+.log-lvl.error{color:var(--red)}
+.log-msg{font-size:11px;color:var(--muted);word-break:break-word;line-height:1.4}
+
+/* Crons */
+.cron-list{display:flex;flex-direction:column;gap:0;max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--b2) transparent}
+.cron-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--b1);gap:8px}
+.cron-item:last-child{border-bottom:none}
+.cron-left{display:flex;align-items:center;gap:7px;min-width:0}
+.cron-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.cron-name{font-size:11px;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+.cron-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.cron-sched{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+.cron-agent{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
+
+/* ══════════════════════════════════════
+   ROW 5 - Sub-agents + Tools (3 cols)
+══════════════════════════════════════ */
+.row5{display:grid;grid-template-columns:1fr 1fr 2fr;gap:12px}
+
+.sub-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.sub-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sub-stat-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:3px}
+.sub-stat-val{font-size:14px;font-weight:600;color:var(--white);font-family:'JetBrains Mono',monospace}
+.sub-tag-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.tag-row{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;background:var(--s2);border:1px solid var(--b2);color:var(--muted);font-family:'JetBrains Mono',monospace}
+.tag.on{border-color:var(--b3);color:var(--txt);background:var(--s3)}
+.tag.dim{border-color:var(--b1);color:var(--dim);opacity:.6}
+.sub-parent{margin-top:12px;padding-top:10px;border-top:1px solid var(--b1);font-size:10px;color:var(--dim)}
+.sub-parent span{color:var(--muted);font-family:'JetBrains Mono',monospace}
+
+/* Tools card - 2-col grid inside */
+.tools-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.tools-inner{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.tg-lbl{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+
+/* ── FOOTER ── */
+footer{padding:12px 24px;border-top:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--dim)}
+.ft-l{font-family:'JetBrains Mono',monospace}
+
+/* ── SCROLLBARS ── */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:99px}
+
+/* ── SKELETON ── */
+.sk{background:linear-gradient(90deg,var(--s2) 25%,var(--b1) 50%,var(--s2) 75%);background-size:200% 100%;animation:shim 1.5s infinite;border-radius:4px}
+@keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){
+  .row1{grid-template-columns:1fr 1fr 1fr}
+  .row2{grid-template-columns:1fr 1fr 1fr 1fr}
+  .row5{grid-template-columns:1fr 1fr}
+}
+@media(max-width:800px){
+  .row1,.row2,.row4,.row5{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ═══ HEADER ═══════════════════════════════════════════════════════════ -->
+<header>
+  <div class="logo">
+    <div class="logo-dot" id="logo-dot"></div>
+    Agent Mission Control
+  </div>
+  <div class="hdr-right">
+    <span class="sync-ts" id="sync-ts">-</span>
+    <div class="status-chip">
+      <div class="chip-dot" id="chip-dot"></div>
+      <span id="chip-txt">Loading…</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ═══ ROW 1: Agents + System ═══════════════════════════════════════════ -->
+<div>
+  <div class="lbl">Agents & System</div>
+  <div class="row1" id="row1">
+    <div class="agent-card primary"><div class="sk" style="width:55%;margin-bottom:10px;height:14px"></div><div class="sk" style="width:35%;height:10px"></div></div>
+    <div class="agent-card"><div class="sk" style="width:55%;margin-bottom:10px;height:14px"></div><div class="sk" style="width:35%;height:10px"></div></div>
+    <div class="met-card"><div class="sk" style="width:40%;margin-bottom:8px;height:10px"></div><div class="sk" style="width:55%;height:20px"></div></div>
+    <div class="met-card"><div class="sk" style="width:40%;margin-bottom:8px;height:10px"></div><div class="sk" style="width:55%;height:20px"></div></div>
+    <div class="met-card"><div class="sk" style="width:40%;margin-bottom:8px;height:10px"></div><div class="sk" style="width:55%;height:20px"></div></div>
+  </div>
+</div>
+
+<!-- ═══ UPTIME STRIP ═══════════════════════════════════════════════════ -->
+<div class="strip">
+  <div class="strip-item"><span class="strip-k">VPS Uptime</span><span class="strip-v" id="uptime-val">-</span></div>
+  <div class="strip-item"><span class="strip-k">Gateway</span><span class="strip-v" id="gw-val">-</span></div>
+  <div class="strip-item"><span class="strip-k">Region</span><span class="strip-v">self-hosted</span></div>
+  <div class="strip-item"><span class="strip-k">Host</span><span class="strip-v">self-hosted</span></div>
+  <div class="strip-item"><span class="strip-k">Last Active</span><span class="strip-v" id="last-active">-</span></div>
+</div>
+
+<!-- ═══ ROW 2: Cost + Spend Chart ════════════════════════════════════════ -->
+<div>
+  <div class="lbl">Usage & Cost</div>
+  <div class="row2">
+    <div class="cost-card">
+      <div class="cost-lbl">Today</div>
+      <div class="cost-val" id="c-today">-</div>
+      <div class="cost-sub" id="c-today-tok">- tokens</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-lbl">This Week</div>
+      <div class="cost-val" id="c-week">-</div>
+      <div class="cost-sub" id="c-week-tok">- tokens</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-lbl">All Time</div>
+      <div class="cost-val" id="c-total">-</div>
+      <div class="cost-sub" id="c-total-tok">- tokens · - msgs</div>
+    </div>
+    <div class="cost-card">
+      <div class="cost-lbl">Sessions</div>
+      <div class="cost-val" id="c-sess">-</div>
+      <div class="cost-sub" id="c-sess-sub">- this week · - total</div>
+    </div>
+    <!-- Spend Chart -->
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <span class="chart-title">Daily Spend - 14 days (£)</span>
+        <div class="chart-today-dot"></div>
+      </div>
+      <div class="chart-wrap" id="spend-chart">
+        <!-- bars injected by JS -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ROW 3: Model Breakdown ════════════════════════════════════════════ -->
+<div>
+  <div class="lbl">By Model</div>
+  <div class="model-card">
+    <div class="model-table">
+      <div class="model-row hdr">
+        <span>Model</span>
+        <span>Usage</span>
+        <span style="text-align:right">Calls</span>
+        <span style="text-align:right">Tokens</span>
+        <span style="text-align:right">Input</span>
+        <span style="text-align:right">Cost</span>
+      </div>
+      <div id="model-rows">
+        <div class="model-row"><div class="sk" style="height:10px;grid-column:1/-1"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ ROW 4: Activity Log + Cron Jobs ═══════════════════════════════════ -->
+<div class="row4">
+  <div class="card" style="padding:16px 18px">
+    <div class="lbl" style="margin-bottom:10px">Activity Log</div>
+    <div class="log-feed" id="log-feed">
+      <div style="color:var(--dim);font-size:11px;padding:12px 0;text-align:center">Loading…</div>
+    </div>
+  </div>
+  <div class="card" style="padding:16px 18px">
+    <div class="lbl" style="margin-bottom:10px">Scheduled Jobs</div>
+    <div class="cron-list" id="cron-list">
+      <div style="color:var(--dim);font-size:11px;padding:12px 0;text-align:center">Loading…</div>
+    </div>
+  </div>
+</div>
+
+
+</main>
+
+<footer>
+  <span class="ft-l"></span>
+  <span>self-hosted</span>
+</footer>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const ICONS = {telegram:'TG', discord:'DC'};
+
+function pct_cls(p){
+  if(p>=85) return 'crit';
+  if(p>=65) return 'warn';
+  return '';
+}
+
+function fmt_tok(n){
+  if(n>=1_000_000) return (n/1_000_000).toFixed(1)+'M';
+  if(n>=1_000) return (n/1_000).toFixed(0)+'K';
+  return n;
+}
+
+function gbp(v){ return '£'+v.toFixed(2); }
+function gbp4(v){ return v===0?'-':'£'+v.toFixed(v<0.01?4:2); }
+
+// ── Render agents (row1) ─────────────────────────────────────────────────────
+const AGENT_ROLES = {
+  cortex:  'Conductor',
+  coach:   'Routine & Discipline',
+  body:    'Health & Training',
+  capital: 'Money Advisor',
+  og:      'Reflection & Legacy',
+};
+// Preferred display order (cortex first, then the four pillars).
+const AGENT_ORDER = ['cortex','coach','body','capital','og'];
+
+function render_agents(agents){
+  const sorted = [...agents].sort((a,b)=>{
+    const ia = AGENT_ORDER.indexOf(a.id); const ib = AGENT_ORDER.indexOf(b.id);
+    return (ia<0?99:ia) - (ib<0?99:ib);
+  });
+  let h = '';
+  for(const a of sorted){
+    const role = AGENT_ROLES[a.id] || (a.id===sorted[0]?.id ? 'Primary' : 'Agent');
+    const klass = a.id === 'cortex' ? 'agent-card primary' : 'agent-card';
+    h += `<div class="${klass}">
+      <div class="agent-hdr">
+        <div><div class="agent-name">${a.name}</div><div class="agent-role">${role}</div></div>
+        <div class="pill ${a.online?'on':'off'}"><div class="pill-dot"></div>${a.online?'Online':'Offline'}</div>
+      </div>
+      <div class="agent-meta">
+        <div class="meta-row"><span class="meta-k">Channel</span><span class="ch-badge">${ICONS[a.channel]||'·'} ${a.channel||'-'}</span></div>
+        <div class="meta-row"><span class="meta-k">Model</span><span class="meta-v">${(a.model||'').split('/').pop()||'-'}</span></div>
+      </div></div>`;
+  }
+  return h;
+}
+
+// ── Render system metrics ────────────────────────────────────────────────────
+function render_metrics(m, gwu){
+  gwu = gwu || {up:false, since_str:'-', restarts:0};
+  const gwCls = gwu.up ? (gwu.since_secs >= 3600 ? '' : 'warn') : 'crit';
+  const restartCls = gwu.restarts >= 3 ? 'crit' : (gwu.restarts >= 1 ? 'warn' : '');
+  return `
+  <div class="met-card">
+    <div class="met-lbl">Gateway</div>
+    <div class="met-val met-gw-val ${gwCls}">${gwu.up ? gwu.since_str : 'down'}</div>
+    <div class="met-sub">
+      <span class="met-gw-restarts ${restartCls}">${gwu.restarts} restart${gwu.restarts===1?'':'s'}</span>
+      ${gwu.up ? '· stable' : '· offline'}
+    </div>
+  </div>
+  <div class="met-card">
+    <div class="met-lbl">CPU</div>
+    <div class="met-val">${m.cpu}<span style="font-size:13px;color:var(--muted)">%</span></div>
+    <div class="pbar"><div class="pfill ${pct_cls(m.cpu)}" style="width:${m.cpu}%"></div></div>
+  </div>
+  <div class="met-card">
+    <div class="met-lbl">Memory</div>
+    <div class="met-val met-ram-val">${m.ram_used}<span style="font-size:13px;color:var(--muted)"> / ${m.ram_total} GB</span></div>
+    <div class="pbar">
+      <div class="pfill ${pct_cls(m.ram_pct)}" style="width:${m.ram_pct}%"></div>
+      <span class="pbar-tick" style="left:75%"></span>
+    </div>
+    <div class="met-sub met-ram-sub">${m.ram_pct}% used · ${(m.ram_total - m.ram_used).toFixed(1)} GB free</div>
+  </div>
+  <div class="met-card">
+    <div class="met-lbl">Disk</div>
+    <div class="met-val">${m.disk_pct}<span style="font-size:13px;color:var(--muted)">%</span></div>
+    <div class="pbar"><div class="pfill ${pct_cls(m.disk_pct)}" style="width:${m.disk_pct}%"></div></div>
+    <div class="met-sub">${m.disk_used} / ${m.disk_total} GB</div>
+  </div>`;
+}
+
+// ── Render spend chart ───────────────────────────────────────────────────────
+function render_chart(daily){
+  const entries = Object.entries(daily); // already sorted 14 days
+  const vals = entries.map(([,v])=>v);
+  const max = Math.max(...vals, 0.001);
+  const today = new Date().toISOString().slice(0,10);
+
+  return entries.map(([date, val], i)=>{
+    const pct = Math.max((val/max)*100, val>0?3:0);
+    const isToday = date === today;
+    const lbl = date.slice(5); // MM-DD
+    const color = isToday ? 'var(--white)' : (val > 2 ? 'var(--yellow)' : 'var(--b3)');
+    return `<div class="bar-col">
+      <div class="bar-inner" style="height:${pct}%;background:${color}">
+        <div class="tooltip">£${val.toFixed(2)}<br>${date}</div>
+      </div>
+      <div class="bar-lbl">${i%3===0?lbl:''}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Render model table ───────────────────────────────────────────────────────
+function render_models(by_model){
+  const rows = Object.entries(by_model)
+    .filter(([,v])=>v.tokens>0)
+    .sort((a,b)=>b[1].tokens-a[1].tokens);
+  if(!rows.length) return '<div style="padding:12px 0;color:var(--dim);font-size:11px">No data</div>';
+  const maxTok = rows[0][1].tokens || 1;
+
+  return rows.map(([name, v])=>{
+    const pct = Math.round((v.tokens/maxTok)*100);
+    return `<div class="model-row">
+      <span class="mod-name">${name}</span>
+      <div class="mod-bar"><div class="mod-bar-fill" style="width:${pct}%"></div></div>
+      <span class="mod-num" style="text-align:right">${v.calls} calls</span>
+      <span class="mod-num" style="text-align:right">${fmt_tok(v.tokens)}</span>
+      <span class="mod-num" style="text-align:right">${fmt_tok(v.input_tokens||0)}</span>
+      <span class="mod-cost">${gbp4(v.cost_gbp||0)}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Render logs ──────────────────────────────────────────────────────────────
+function render_logs(logs){
+  if(!logs.length) return '<div style="color:var(--dim);font-size:11px;padding:14px 0;text-align:center">No logs</div>';
+  return logs.map(l=>`
+    <div class="log-entry">
+      <span class="log-ts">${l.ts}</span>
+      <span class="log-lvl ${l.level}">${l.level.toUpperCase()}</span>
+      <span class="log-msg">${l.msg.replace(/</g,'&lt;')}</span>
+    </div>`).join('');
+}
+
+// ── Render crons ─────────────────────────────────────────────────────────────
+const CRON_MAP={
+  '0 7 * * *':'07:00 daily','0 8 * * *':'08:00 daily',
+  '0 21 * * *':'21:00 daily','0 2 * * *':'02:00 daily',
+  '0 22 * * *':'22:00 daily','0 19 * * 0':'Sun 19:00',
+  '0 20 * * 0':'Sun 20:00','0 8 * * 1':'Mon 08:00',
+};
+function cron_human(expr){ return CRON_MAP[expr]||expr; }
+
+function render_crons(jobs){
+  if(!jobs.length) return '<div style="color:var(--dim);font-size:11px;padding:14px 0;text-align:center">No jobs</div>';
+  return jobs.map(j=>{
+    const en = j.enabled;
+    const expr = j.schedule?.expr||'-';
+    return `<div class="cron-item">
+      <div class="cron-left">
+        <div class="cron-dot" style="background:${en?'var(--green)':'var(--dim)'}"></div>
+        <span class="cron-name">${j.name}</span>
+      </div>
+      <div class="cron-right">
+        <span class="cron-sched">${cron_human(expr)}</span>
+        <span class="cron-agent">${j.agentId}·${j.delivery?.channel||'-'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Main load ────────────────────────────────────────────────────────────────
+async function load(){
+  try{
+    const res = await fetch('/api/status');
+    const d = await res.json();
+
+    // Header
+    $('sync-ts').textContent = d.ts;
+    const dot = $('logo-dot'), cdot=$('chip-dot'), ctxt=$('chip-txt');
+    if(d.gateway){
+      dot.className='logo-dot'; cdot.style.background='var(--green)';
+      ctxt.textContent='All systems operational';
+    } else {
+      dot.className='logo-dot off'; cdot.style.background='var(--red)';
+      ctxt.textContent='Gateway offline';
+    }
+
+    // Row 1
+    $('row1').innerHTML = render_agents(d.agents) + render_metrics(d.metrics, d.gateway_uptime);
+
+    // Strip
+    $('uptime-val').textContent = d.metrics.uptime;
+    const gv = $('gw-val');
+    gv.textContent = d.gateway?'Active':'Down';
+    gv.style.color = d.gateway?'var(--green)':'var(--red)';
+    if(d.usage?.last_active) $('last-active').textContent = d.usage.last_active.replace('T',' ').slice(0,16);
+
+    // Usage
+    if(d.usage){
+      const u = d.usage;
+      $('c-today').textContent    = gbp(u.today_cost_gbp||0);
+      $('c-today-tok').textContent= fmt_tok(u.today_tokens)+' tokens';
+      $('c-week').textContent     = gbp(u.week_cost_gbp||0);
+      $('c-week-tok').textContent = fmt_tok(u.week_tokens)+' tokens';
+      $('c-total').textContent    = gbp(u.total_cost_gbp||0);
+      $('c-total-tok').textContent= fmt_tok(u.total_tokens)+' tokens · '+u.messages+' msgs';
+      $('c-sess').textContent     = u.sessions_today;
+      $('c-sess-sub').textContent = u.sessions_week+' this week · '+u.sessions_total+' total';
+
+      // Spend chart
+      if(u.daily_spend) $('spend-chart').innerHTML = render_chart(u.daily_spend);
+
+      // Model table
+      $('model-rows').innerHTML = render_models(u.by_model||{});
+    }
+
+    // Logs
+    $('log-feed').innerHTML = render_logs(d.logs||[]);
+
+    // Crons
+    $('cron-list').innerHTML = render_crons(d.cron_jobs||[]);
+
+  } catch(e){ console.error('load failed', e); }
+}
+
+// ── SSE live metrics ─────────────────────────────────────────────────────────
+function startStream(){
+  const es = new EventSource('/api/stream');
+  es.onmessage = e=>{
+    try{
+      const d = JSON.parse(e.data);
+      if(d.metrics){
+        const m = d.metrics;
+        $('sync-ts').textContent = d.ts;
+        $('uptime-val').textContent = m.uptime;
+        // Update metric cards in row1 (Gateway, CPU, Memory, Disk)
+        const cards = document.querySelectorAll('#row1 .met-card');
+        if(cards.length===4){
+          // Gateway
+          const gwu = d.gateway_uptime || {up:false, since_str:'-', restarts:0};
+          const gwCls = gwu.up ? (gwu.since_secs >= 3600 ? '' : 'warn') : 'crit';
+          const gwVal = cards[0].querySelector('.met-val');
+          gwVal.textContent = gwu.up ? gwu.since_str : 'down';
+          gwVal.className = `met-val met-gw-val ${gwCls}`;
+          const rCls = gwu.restarts >= 3 ? 'crit' : (gwu.restarts >= 1 ? 'warn' : '');
+          cards[0].querySelector('.met-sub').innerHTML =
+            `<span class="met-gw-restarts ${rCls}">${gwu.restarts} restart${gwu.restarts===1?'':'s'}</span> ${gwu.up?'· stable':'· offline'}`;
+          // CPU
+          cards[1].querySelector('.met-val').innerHTML=`${m.cpu}<span style="font-size:13px;color:var(--muted)">%</span>`;
+          cards[1].querySelector('.pfill').style.width=m.cpu+'%';
+          cards[1].querySelector('.pfill').className=`pfill ${pct_cls(m.cpu)}`;
+          // Memory (absolute GB + ceiling tick)
+          cards[2].querySelector('.met-val').innerHTML=`${m.ram_used}<span style="font-size:13px;color:var(--muted)"> / ${m.ram_total} GB</span>`;
+          cards[2].querySelector('.pfill').style.width=m.ram_pct+'%';
+          cards[2].querySelector('.pfill').className=`pfill ${pct_cls(m.ram_pct)}`;
+          cards[2].querySelector('.met-ram-sub').textContent=`${m.ram_pct}% used · ${(m.ram_total - m.ram_used).toFixed(1)} GB free`;
+          // Disk
+          cards[3].querySelector('.met-val').innerHTML=`${m.disk_pct}<span style="font-size:13px;color:var(--muted)">%</span>`;
+          cards[3].querySelector('.pfill').style.width=m.disk_pct+'%';
+          cards[3].querySelector('.met-sub').textContent=`${m.disk_used} / ${m.disk_total} GB`;
+        }
+        const gv=$('gw-val');
+        if(d.gateway!==undefined){
+          gv.textContent=d.gateway?'Active':'Down';
+          gv.style.color=d.gateway?'var(--green)':'var(--red)';
+          $('logo-dot').className=d.gateway?'logo-dot':'logo-dot off';
+        }
+      }
+    } catch(err){ /* ignore */ }
+  };
+  es.onerror=()=>{ es.close(); setTimeout(startStream,5000); };
+}
+
+setInterval(load, 30000);
+load();
+startStream();
+</script>
+</body>
+</html>
