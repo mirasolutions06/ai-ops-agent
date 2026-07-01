@@ -4,13 +4,18 @@ PIP ?= $(PYTHON) -m pip
 export PYTHONPATH := scripts:$(PYTHONPATH)
 export AGENT_VAULT_DIR ?= $(CURDIR)/.vault
 
-.PHONY: install test db-init mcp dashboard clean
+.PHONY: install lint test check db-init mcp dashboard clean
 
 install:
 	$(PIP) install -r requirements.txt
 
+lint:
+	$(PYTHON) -m ruff check scripts
+
 test:
 	$(PYTHON) -m pytest -q scripts/tests
+
+check: lint test
 
 db-init:
 	$(PYTHON) scripts/agent_db.py init

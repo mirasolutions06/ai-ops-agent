@@ -18,6 +18,22 @@ dashboard, all driven from chat and owned entirely by you.
 
 </div>
 
+## At a glance
+
+This repo is a working Python/MCP tool server for a private operations assistant.
+It is useful if you want a self-hosted agent that can remember notes, manage
+tasks, read a vault, run scheduled briefings, and expose a simple ops dashboard.
+
+| Path | What it contains |
+|---|---|
+| `scripts/agent_mcp.py` | The MCP tool server the agent runtime connects to. |
+| `scripts/agent_db.py` | SQLite schema and task/state helpers. |
+| `scripts/dashboard_main.py` | FastAPI dashboard for status, jobs, logs, and costs. |
+| `config.example.json` | Safe starter config for paths, models, and schedule. |
+| `ARCHITECTURE.md` | System design and data-flow notes. |
+| `RUNBOOK.md` | Setup, operations, and deployment checklist. |
+| `scripts/tests/` | No-secret tests for database, digest, tools, and smoke paths. |
+
 ## Why
 
 Most "AI assistants" are a chat box that forgets everything and does nothing when

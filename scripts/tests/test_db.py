@@ -2,7 +2,6 @@
 # Round-trip tests for every agent_db command, run in a subprocess against a
 # temp vault. No live secrets, no mcp/fastapi needed.
 
-import json
 import os
 import sqlite3
 import subprocess
