@@ -84,8 +84,11 @@ make db-init        # create the SQLite schema
 Run the tool server or the dashboard locally:
 
 ```bash
-AGENT_VAULT_DIR="$PWD/.vault" python3 scripts/agent_mcp.py       # MCP tool server (stdio)
-AGENT_VAULT_DIR="$PWD/.vault" python3 scripts/dashboard_main.py  # dashboard at http://localhost:7474
+# MCP tool server (stdio)
+AGENT_VAULT_DIR="$PWD/.vault" python3 scripts/agent_mcp.py
+
+# ops dashboard at http://localhost:7474
+AGENT_VAULT_DIR="$PWD/.vault" python3 scripts/dashboard_main.py
 ```
 
 ## Configure it for your setup
