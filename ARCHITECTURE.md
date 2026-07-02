@@ -7,8 +7,7 @@ three concerns so you can change any one without touching the others:
    tasks, daily state, calendar, multimodal, and search. Deterministic and
    model-agnostic.
 2. **Runtime (the brain)** - a model-swappable, MCP-capable agent runtime that
-   decides what to do and calls the tools. Any MCP runtime works; the reference
-   deployment runs on a custom runtime (Hermes).
+   decides what to do and calls the tools. Any MCP runtime works.
 3. **Schedule (the crons)** - the triggers that wake the runtime: a morning
    brief, an evening digest, a weekly review, and background sweeps. You edit
    these per setup.
@@ -21,7 +20,7 @@ yours; point the paths at your own and the same engine runs.
 ```mermaid
 flowchart TD
     Cron["Scheduler (cron / timers)"] --> Runtime["Agent runtime (any MCP brain)"]
-    Chat["You (Telegram / chat)"] --> Runtime
+    Chat["You (chat or operator UI)"] --> Runtime
     Runtime --> MCP["FastMCP tool server (this repo)"]
     MCP --> Vault[("Markdown vault")]
     MCP --> DB[("SQLite state")]

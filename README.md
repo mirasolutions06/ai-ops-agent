@@ -2,17 +2,17 @@
 
 # AI Ops Agent
 
-**A self-hosted AI chief-of-staff with a heartbeat.** Tasks, calendar, a
-searchable memory vault, scheduled briefings, and a live mission-control
-dashboard, all driven from chat and owned entirely by you.
+**A private operations control center for notes, tasks, calendar context, and
+scheduled briefings.** Run it with any MCP-capable agent runtime, keep the data
+in your own vault, and watch the loop from a simple dashboard.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/mirasolutions06/ai-ops-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/mirasolutions06/ai-ops-agent/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
 ![MCP tools](https://img.shields.io/badge/MCP%20tools-24-8A2BE2.svg)
-![Tests](https://img.shields.io/badge/tests-22-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-17%20passing%20%2B%201%20skipped-brightgreen.svg)
 
-[Architecture](ARCHITECTURE.md) · [Runbook](RUNBOOK.md) · [Configure](#configure-it-for-your-setup)
+[Architecture](ARCHITECTURE.md) · [Workflows](docs/workflows.md) · [Tool catalog](docs/tool-catalog.md) · [Runbook](RUNBOOK.md)
 
 <img src="docs/images/dashboard.png" alt="AI Ops Agent mission-control dashboard: agent status, uptime, scheduled jobs, token usage and cost" width="820">
 
@@ -20,9 +20,27 @@ dashboard, all driven from chat and owned entirely by you.
 
 ## At a glance
 
-This repo is a working Python/MCP tool server for a private operations assistant.
-It is useful if you want a self-hosted agent that can remember notes, manage
-tasks, read a vault, run scheduled briefings, and expose a simple ops dashboard.
+This repo is the reusable core of a self-hosted operations agent. It gives an
+agent runtime deterministic tools for reading a private vault, managing tasks,
+building scheduled briefs, archiving voice notes, and exposing operational state
+through a dashboard.
+
+| This repo owns | You provide |
+|---|---|
+| FastMCP tool server, SQLite state, vault-safe file helpers, scheduled scripts, dashboard, tests | Your vault, your agent runtime, provider keys, scheduler, chat or operator UI |
+
+## Common workflows
+
+| Workflow | What happens |
+|---|---|
+| Morning brief | Pull open tasks, calendar context, recent notes, and vault search into a short planning brief. |
+| Task capture | Add, list, close, and mirror tasks into a markdown file that is easy to review or edit by hand. |
+| Voice-note routing | Archive audio plus transcript, then route the note into a task, journal entry, or vault note. |
+| Evening digest | Summarize the day and write a journal-ready payload from tasks, mood, activity, notes, and voice notes. |
+| Weekly review | Roll up the week, preserve decisions, and prepare the next planning loop. |
+| Ops dashboard | Check uptime, scheduled jobs, logs, token usage, estimated cost, and database-backed state. |
+
+## Repository map
 
 | Path | What it contains |
 |---|---|
@@ -31,16 +49,18 @@ tasks, read a vault, run scheduled briefings, and expose a simple ops dashboard.
 | `scripts/dashboard_main.py` | FastAPI dashboard for status, jobs, logs, and costs. |
 | `config.example.json` | Safe starter config for paths, models, and schedule. |
 | `ARCHITECTURE.md` | System design and data-flow notes. |
+| `docs/workflows.md` | Plain-English description of the daily and weekly loops. |
+| `docs/tool-catalog.md` | Public tool surface grouped by job-to-be-done. |
 | `RUNBOOK.md` | Setup, operations, and deployment checklist. |
 | `scripts/tests/` | No-secret tests for database, digest, tools, and smoke paths. |
 
 ## Why
 
 Most "AI assistants" are a chat box that forgets everything and does nothing when
-you stop typing. This is the opposite: an agent with a heartbeat. It wakes on a
-schedule, keeps durable memory in a markdown vault and SQLite, does real work
-through typed tools, and only ever writes inside safe boundaries. You run it, you
-own the data, and a dashboard shows you exactly what it is doing.
+you stop typing. This is the opposite: an agent with an operating loop. It wakes
+on a schedule, keeps durable memory in a markdown vault and SQLite, does real
+work through typed tools, and only ever writes inside safe boundaries. You run
+it, you own the data, and the dashboard shows you exactly what it is doing.
 
 The hard part was never "call an LLM." It was the operating system around it: what
 the agent should know before it speaks, which actions are deterministic tools
@@ -76,7 +96,7 @@ that wakes it.
 ```mermaid
 flowchart TD
     Cron["Scheduler: morning brief, evening digest, weekly review, sweeps"] --> Runtime["Agent runtime (any MCP brain)"]
-    Chat["You (Telegram / chat)"] --> Runtime
+    Chat["You (chat or operator UI)"] --> Runtime
     Runtime --> MCP["FastMCP tool server (this repo): 24 tools"]
     MCP --> Vault[("Markdown vault")]
     MCP --> DB[("SQLite: tasks, habits, activity, notes")]
@@ -93,7 +113,7 @@ Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 make install
-make test          # 22 tests, no live secrets needed
+make test          # 17 passing + 1 skipped, no live secrets needed
 make db-init        # create the SQLite schema
 ```
 
@@ -129,14 +149,9 @@ Python behind a typed MCP surface.
 Credentials never live in the repo (`.env` locally, or a server env file via
 `AGENT_ENV_FILE`). Vault paths are resolved under the vault root and reject
 escapes; free-form SQL is read-only. No hostnames, IPs, vault contents, or
-personal data are committed.
+personal data are committed. The included config is a template, not a dump from a
+real deployment.
 
 ## License
 
 MIT, see [LICENSE](LICENSE). Use it, fork it, adapt it for your own setup.
-
-## Contact
-
-Built and operated by Mira Solutions, an AI engineering and automation studio.
-
-mira.solutions06@gmail.com

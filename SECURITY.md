@@ -6,7 +6,8 @@ The public `main` branch is the supported version for this demo/reference repo.
 
 ## Reporting a vulnerability
 
-Please email `mira.solutions06@gmail.com` with:
+Please use GitHub's private vulnerability reporting if it is enabled for this
+repository, or contact the repository owner privately with:
 
 - The affected repo and file or endpoint.
 - Steps to reproduce.
