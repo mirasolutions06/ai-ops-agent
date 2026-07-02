@@ -10,7 +10,7 @@ in your own vault, and watch the loop from a simple dashboard.
 [![CI](https://github.com/mirasolutions06/ai-ops-agent/actions/workflows/ci.yml/badge.svg)](https://github.com/mirasolutions06/ai-ops-agent/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)
 ![MCP tools](https://img.shields.io/badge/MCP%20tools-24-8A2BE2.svg)
-![Tests](https://img.shields.io/badge/tests-17%20passing%20%2B%201%20skipped-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-22-brightgreen.svg)
 
 [Architecture](ARCHITECTURE.md) · [Workflows](docs/workflows.md) · [Tool catalog](docs/tool-catalog.md) · [Runbook](RUNBOOK.md)
 
@@ -113,7 +113,7 @@ Full detail in [ARCHITECTURE.md](ARCHITECTURE.md).
 ```bash
 python3 -m venv .venv && . .venv/bin/activate
 make install
-make test          # 17 passing + 1 skipped, no live secrets needed
+make test          # 22 tests, no live secrets needed
 make db-init        # create the SQLite schema
 ```
 
