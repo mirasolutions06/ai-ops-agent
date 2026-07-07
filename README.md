@@ -155,3 +155,8 @@ real deployment.
 ## License
 
 MIT, see [LICENSE](LICENSE). Use it, fork it, adapt it for your own setup.
+
+## Contact
+
+Built and operated by Mira Solutions, an AI engineering and automation studio.
+mira.solutions06@gmail.com
